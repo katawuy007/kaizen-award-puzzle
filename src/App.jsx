@@ -17,6 +17,7 @@ import {
   isSupabaseEnabled,
 } from './utils/supabase.js';
 import { sound } from './utils/sound.js';
+import LoginScreen from './components/LoginScreen.jsx';
 import LobbyScreen from './components/LobbyScreen.jsx';
 import MissionModal from './components/MissionModal.jsx';
 import PuzzleArena from './components/PuzzleArena.jsx';
@@ -27,6 +28,7 @@ import QrShareModal from './components/QrShareModal.jsx';
 
 const THEME_STORAGE_KEY = 'kaizen_award_theme_v1';
 const PROFILE_STORAGE_KEY = 'kaizen_award_player_profile_v1';
+const FIXED_GRID_SIZE = 4; // 4x4 (16 pieces) only
 
 function loadInitialTheme() {
   try {
@@ -41,17 +43,24 @@ function loadInitialTheme() {
 function loadPlayerProfile() {
   try {
     const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        employeeId: parsed.employeeId || '',
+        department: parsed.department || '',
+        name: parsed.name || '',
+      };
+    }
   } catch {
     // ignore
   }
-  return { name: '', department: '' };
+  return { employeeId: '', department: '', name: '' };
 }
 
 export default function App() {
-  const [screen, setScreen] = useState('lobby'); // 'lobby' | 'puzzle'
+  // Always open on the Login Screen first!
+  const [screen, setScreen] = useState('login'); // 'login' | 'lobby' | 'puzzle'
   const [theme, setTheme] = useState(loadInitialTheme);
-  const [gridSize, setGridSize] = useState(5); // 3 | 4 | 5
   const [progress, setProgress] = useState(() => loadProgress());
   const [leaderboard, setLeaderboard] = useState(() => loadLeaderboard());
   const [leaderboardSource, setLeaderboardSource] = useState(isSupabaseEnabled ? 'supabase' : 'local');
@@ -60,36 +69,19 @@ export default function App() {
   const [muted, setMuted] = useState(() => sound.isMuted());
   const [bgmEnabled, setBgmEnabled] = useState(() => sound.isBgmEnabled());
 
-  // Fetch online Supabase leaderboard & subscribe to live Realtime updates
-  const refreshLeaderboard = useCallback(async () => {
-    setLeaderboardLoading(true);
-    try {
-      const res = await fetchLeaderboard();
-      setLeaderboard(res.entries);
-      setLeaderboardSource(res.source);
-    } finally {
-      setLeaderboardLoading(false);
-    }
-  }, []);
+  const [sessionHistory, setSessionHistory] = useState([]);
+  const [lastDrawnId, setLastDrawnId] = useState(null);
+  const [autoSpinToken, setAutoSpinToken] = useState(0);
 
-  useEffect(() => {
-    refreshLeaderboard();
-    const unsubscribe = subscribeLeaderboard((newEntry) => {
-      setLeaderboard((prev) => {
-        if (prev.some((item) => item.id === newEntry.id)) return prev;
-        return [...prev, newEntry]
-          .sort((a, b) => {
-            if (b.gridSize !== a.gridSize) return b.gridSize - a.gridSize;
-            if (a.elapsedSeconds !== b.elapsedSeconds) return a.elapsedSeconds - b.elapsedSeconds;
-            return a.hintsUsed - b.hintsUsed;
-          })
-          .slice(0, 100);
-      });
-    });
-    return unsubscribe;
-  }, [refreshLeaderboard]);
+  const [drawnCategory, setDrawnCategory] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [gameKey, setGameKey] = useState(1);
+  const [victoryData, setVictoryData] = useState(null);
+  const [collectionState, setCollectionState] = useState({ open: false, focusId: null });
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
-  // Sync theme class on <html> and browser theme-color
+  // Sync theme class on <html>
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -108,23 +100,60 @@ export default function App() {
     }
   }, [theme]);
 
+  const refreshLeaderboard = useCallback(async () => {
+    setLeaderboardLoading(true);
+    try {
+      const res = await fetchLeaderboard();
+      setLeaderboard(res.entries);
+      setLeaderboardSource(res.source);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }, []);
+
+  // Load initial leaderboard count once on mount
+  useEffect(() => {
+    refreshLeaderboard();
+  }, [refreshLeaderboard]);
+
+  // Smart Realtime: connect ONLY when LeaderboardModal is open (supports 400+ concurrent players on Supabase Free!)
+  useEffect(() => {
+    if (!showLeaderboard) return undefined;
+    refreshLeaderboard();
+    const unsubscribe = subscribeLeaderboard((newEntry) => {
+      setLeaderboard((prev) => {
+        if (prev.some((item) => item.id === newEntry.id)) return prev;
+        return [...prev, newEntry]
+          .sort((a, b) => {
+            if (b.gridSize !== a.gridSize) return b.gridSize - a.gridSize;
+            if (a.elapsedSeconds !== b.elapsedSeconds) return a.elapsedSeconds - b.elapsedSeconds;
+            return a.hintsUsed - b.hintsUsed;
+          })
+          .slice(0, 100);
+      });
+    });
+    return unsubscribe;
+  }, [showLeaderboard, refreshLeaderboard]);
+
   const handleToggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  // Session smart-random tracking
-  const [sessionHistory, setSessionHistory] = useState([]);
-  const [lastDrawnId, setLastDrawnId] = useState(null);
-  const [autoSpinToken, setAutoSpinToken] = useState(0);
+  const handleLogin = useCallback((profile) => {
+    setPlayerProfile(profile);
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+    } catch {
+      // ignore
+    }
+    setScreen('lobby');
+  }, []);
 
-  // Active modals & gameplay state
-  const [drawnCategory, setDrawnCategory] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [gameKey, setGameKey] = useState(1);
-  const [victoryData, setVictoryData] = useState(null);
-  const [collectionState, setCollectionState] = useState({ open: false, focusId: null });
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [showQr, setShowQr] = useState(false);
+  const handleLogout = useCallback(() => {
+    setDrawnCategory(null);
+    setVictoryData(null);
+    setScreen('login');
+  }, []);
 
   const completedCount = useMemo(
     () => CATEGORIES.filter((c) => progress[c.id]?.completed).length,
@@ -166,7 +195,7 @@ export default function App() {
   const handlePuzzleComplete = useCallback(
     ({ elapsedSeconds, hintsUsed, maxCombo }) => {
       if (!activeCategory) return;
-      const stars = calculateStars(elapsedSeconds, hintsUsed, gridSize);
+      const stars = calculateStars(elapsedSeconds, hintsUsed, FIXED_GRID_SIZE);
       const prevRecord = progress[activeCategory.id];
       const isNewBest =
         !prevRecord?.completed ||
@@ -190,10 +219,9 @@ export default function App() {
       setProgress(nextProgress);
       saveProgress(nextProgress);
 
-      // Silently record anonymous booth analytics to Supabase (non-blocking)
       logAnonymousPlay({
         categoryId: activeCategory.id,
-        gridSize,
+        gridSize: FIXED_GRID_SIZE,
         elapsedSeconds,
         hintsUsed,
         maxCombo,
@@ -202,27 +230,33 @@ export default function App() {
 
       setVictoryData({
         category: activeCategory,
-        gridSize,
+        gridSize: FIXED_GRID_SIZE,
         stats: { elapsedSeconds, hintsUsed, maxCombo, stars },
         isNewBest,
       });
     },
-    [activeCategory, gridSize, progress]
+    [activeCategory, progress]
   );
 
-  const handleSaveScore = useCallback(async (entry) => {
-    const nextProfile = { name: entry.name, department: entry.department };
-    setPlayerProfile(nextProfile);
-    try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(nextProfile));
-    } catch {
-      // ignore
-    }
+  const handleSaveScore = useCallback(
+    async (entry) => {
+      const nextProfile = {
+        ...playerProfile,
+        name: entry.name,
+      };
+      setPlayerProfile(nextProfile);
+      try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(nextProfile));
+      } catch {
+        // ignore
+      }
 
-    const res = await submitLeaderboardScore(entry);
-    setLeaderboard(res.entries);
-    setLeaderboardSource(res.source);
-  }, []);
+      const res = await submitLeaderboardScore(entry);
+      setLeaderboard(res.entries);
+      setLeaderboardSource(res.source);
+    },
+    [playerProfile]
+  );
 
   const handleClearLeaderboard = useCallback(() => {
     clearLeaderboard();
@@ -254,12 +288,24 @@ export default function App() {
 
   return (
     <>
+      {screen === 'login' && (
+        <LoginScreen
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          muted={muted}
+          onToggleMute={handleToggleMute}
+          initialProfile={playerProfile}
+          onLogin={handleLogin}
+        />
+      )}
+
       {screen === 'lobby' && (
         <LobbyScreen
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          gridSize={gridSize}
-          onChangeGridSize={setGridSize}
+          gridSize={FIXED_GRID_SIZE}
+          playerProfile={playerProfile}
+          onLogout={handleLogout}
           progress={progress}
           leaderboardCount={leaderboard.length}
           sessionHistory={sessionHistory}
@@ -281,7 +327,7 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           category={activeCategory}
-          gridSize={gridSize}
+          gridSize={FIXED_GRID_SIZE}
           gameKey={gameKey}
           muted={muted}
           bgmEnabled={bgmEnabled}
@@ -301,8 +347,7 @@ export default function App() {
           <MissionModal
             theme={theme}
             category={drawnCategory}
-            gridSize={gridSize}
-            onChangeGridSize={setGridSize}
+            gridSize={FIXED_GRID_SIZE}
             onStartPuzzle={handleStartPuzzle}
             onRespin={handleRespinFromMission}
             onClose={() => setDrawnCategory(null)}
@@ -316,7 +361,7 @@ export default function App() {
           <VictoryModal
             theme={theme}
             category={victoryData.category}
-            gridSize={victoryData.gridSize}
+            gridSize={FIXED_GRID_SIZE}
             stats={victoryData.stats}
             isNewBest={victoryData.isNewBest}
             completedCount={completedCount}
@@ -333,16 +378,15 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Collection Gallery & Direct-Select Modal */}
+      {/* Collection Gallery Modal (View Only) */}
       <AnimatePresence>
         {collectionState.open && (
           <CollectionModal
             theme={theme}
-            gridSize={gridSize}
+            gridSize={FIXED_GRID_SIZE}
             progress={progress}
             playerProfile={playerProfile}
             initialFocusId={collectionState.focusId}
-            onSelectCategory={handleStartPuzzle}
             onResetProgress={handleResetProgress}
             onClose={() => setCollectionState({ open: false, focusId: null })}
           />

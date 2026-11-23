@@ -6,7 +6,6 @@ import {
   Trophy,
   Volume2,
   VolumeX,
-  Grid,
   Sparkles,
   Lock,
   Star,
@@ -16,8 +15,10 @@ import {
   Medal,
   QrCode,
   Music,
+  LogOut,
+  User,
 } from 'lucide-react';
-import { CATEGORIES, DIFFICULTIES, formatTime, pickSmartCategory } from '../data/categories.js';
+import { CATEGORIES, formatTime, pickSmartCategory } from '../data/categories.js';
 import { sound } from '../utils/sound.js';
 import ThemeToggle from './ThemeToggle.jsx';
 
@@ -30,8 +31,9 @@ const MARQUEE_BULBS = Array.from({ length: 18 }, (_, i) => i);
 export default function LobbyScreen({
   theme,
   onToggleTheme,
-  gridSize,
-  onChangeGridSize,
+  gridSize = 4,
+  playerProfile,
+  onLogout,
   progress,
   leaderboardCount,
   sessionHistory,
@@ -255,12 +257,38 @@ export default function LobbyScreen({
                     : 'bg-sky-100 text-sky-700 border-sky-300/70'
                 }`}
               >
-                5×5 JIGSAW
+                4×4 JIGSAW
               </span>
             </div>
-            <p className={`hidden sm:block text-xs truncate ${isDark ? 'text-slate-300/80' : 'text-slate-600'}`}>
-              เกมสุ่มภารกิจต่อจิ๊กซอร์ 7 หมวดรางวัลไคเซ็น
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-semibold truncate max-w-[140px] sm:max-w-[260px] ${
+                  isDark ? 'text-sky-200' : 'text-sky-800'
+                }`}
+              >
+                <User className="w-3 h-3 text-amber-400 shrink-0" />
+                <span className="truncate">
+                  {playerProfile?.name}
+                  {playerProfile?.department ? ` (${playerProfile.department})` : ''}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playButton();
+                  onLogout();
+                }}
+                title="เปลี่ยนผู้เล่น / กลับหน้าล็อกอิน"
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors shrink-0 ${
+                  isDark
+                    ? 'bg-white/10 hover:bg-white/20 text-slate-300'
+                    : 'bg-slate-200/80 hover:bg-slate-300 text-slate-700'
+                }`}
+              >
+                <LogOut className="w-2.5 h-2.5" />
+                <span className="hidden sm:inline">เปลี่ยนคน</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -602,88 +630,26 @@ export default function LobbyScreen({
           </div>
         </div>
 
-        {/* Difficulty Selector + Primary Arcade Random Draw Button */}
-        <div className="flex flex-col items-center gap-3 w-full">
-          {/* Difficulty Segmented Pills (3x3 / 4x4 / 5x5) */}
-          <div
-            className={`inline-flex items-center gap-1 p-1 rounded-2xl border ${
-              isDark
-                ? 'bg-slate-900/80 border-white/15'
-                : 'bg-white/85 border-slate-200 shadow-sm'
-            }`}
+        {/* Primary Arcade Random Draw Button (4x4 Only — No Manual Pick) */}
+        <div className="flex items-center justify-center w-full">
+          <button
+            type="button"
+            disabled={isSpinning}
+            onClick={startSpin}
+            className="cta-button-glow relative overflow-hidden group w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-display font-extrabold text-base sm:text-xl tracking-wide flex items-center justify-center gap-2.5 whitespace-nowrap disabled:opacity-75 disabled:cursor-wait"
           >
-            <span className={`px-2.5 text-[11px] font-bold hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              ขนาดกระดาน:
+            <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+              <span className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent animate-shimmer" />
             </span>
-            {DIFFICULTIES.map((d) => {
-              const active = gridSize === d.gridSize;
-              return (
-                <button
-                  key={d.gridSize}
-                  type="button"
-                  disabled={isSpinning}
-                  onClick={() => {
-                    sound.playButton();
-                    onChangeGridSize(d.gridSize);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    active
-                      ? 'bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-md'
-                      : isDark
-                      ? 'text-slate-300 hover:bg-white/10'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>{d.label}</span>
-                  <span
-                    className={`text-[10px] font-medium ${
-                      active ? 'text-sky-100' : isDark ? 'text-slate-400' : 'text-slate-500'
-                    }`}
-                  >
-                    ({d.tag})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 w-full">
-            <button
-              type="button"
-              disabled={isSpinning}
-              onClick={startSpin}
-              className="cta-button-glow relative overflow-hidden group w-full sm:w-auto px-6 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-display font-extrabold text-base sm:text-xl tracking-wide flex items-center justify-center gap-2.5 whitespace-nowrap disabled:opacity-75 disabled:cursor-wait"
-            >
-              <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-                <span className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent animate-shimmer" />
-              </span>
-              <Dices
-                className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 ${
-                  isSpinning ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'
-                }`}
-              />
-              <span>
-                {isSpinning ? 'กำลังสุ่มภารกิจ Kaizen Award...' : 'สุ่มรับภารกิจ Kaizen Award!'}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isSpinning}
-              onClick={() => {
-                sound.playButton();
-                onOpenCollection();
-              }}
-              className={`glass-panel transition-all w-full sm:w-auto px-5 py-3 sm:py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 ${
-                isDark
-                  ? 'hover:bg-white/15 text-slate-100'
-                  : 'hover:bg-white text-slate-800'
+            <Dices
+              className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 ${
+                isSpinning ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'
               }`}
-            >
-              <Grid className="w-4 h-4 text-sky-500 shrink-0" />
-              <span>เลือกเล่นเอง (7 หมวด)</span>
-            </button>
-          </div>
+            />
+            <span>
+              {isSpinning ? 'กำลังสุ่มภารกิจ Kaizen Award...' : 'สุ่มรับภารกิจ Kaizen Award!'}
+            </span>
+          </button>
         </div>
       </main>
 

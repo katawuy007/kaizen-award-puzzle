@@ -221,37 +221,21 @@ export default function LeaderboardModal({
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Category Filter Bar (4x4 Mode) */}
         <div
           className={`px-4 sm:px-6 py-3 border-b flex flex-wrap items-center justify-between gap-2.5 ${
             isDark ? 'border-white/10 bg-white/[0.02]' : 'border-slate-200/70 bg-slate-50/70'
           }`}
         >
-          {/* Difficulty Filter */}
-          <div className="flex items-center gap-1.5">
-            {[{ gridSize: 'all', label: 'ทุกขนาด' }, ...DIFFICULTIES].map((d) => {
-              const active = String(selectedGrid) === String(d.gridSize);
-              return (
-                <button
-                  key={d.gridSize}
-                  type="button"
-                  onClick={() => {
-                    sound.playButton();
-                    setSelectedGrid(String(d.gridSize));
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
-                    active
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 shadow'
-                      : isDark
-                      ? 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {d.label}
-                </button>
-              );
-            })}
-          </div>
+          <span
+            className={`px-3 py-1 rounded-xl text-xs font-bold border ${
+              isDark
+                ? 'bg-amber-400/15 border-amber-400/35 text-amber-300'
+                : 'bg-amber-100 border-amber-300 text-amber-800'
+            }`}
+          >
+            🧩 โหมดมาตรฐาน 4×4 (16 ชิ้น)
+          </span>
 
           {/* Category Filter */}
           <select

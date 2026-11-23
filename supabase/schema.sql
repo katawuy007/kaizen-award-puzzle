@@ -38,7 +38,11 @@ create table if not exists public.kaizen_play_logs (
 create index if not exists idx_kaizen_play_logs_created
   on public.kaizen_play_logs (created_at desc);
 
--- 3) Row Level Security (RLS): Safe public read/insert, NO public delete/update
+-- 3) Row Level Security (RLS) & Table Privileges: Safe public read/insert, NO public delete/update
+grant usage on schema public to anon, authenticated;
+grant select, insert on public.kaizen_scores to anon, authenticated;
+grant select, insert on public.kaizen_play_logs to anon, authenticated;
+
 alter table public.kaizen_scores enable row level security;
 alter table public.kaizen_play_logs enable row level security;
 

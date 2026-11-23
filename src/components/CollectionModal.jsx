@@ -84,10 +84,10 @@ export default function CollectionModal({
             </div>
             <div>
               <h2 className={`font-display font-bold text-lg sm:text-xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                คอลเลกชันรางวัล & เลือกเล่นเอง (7 หมวด)
+                คอลเลกชันรางวัล Kaizen Award (7 หมวด)
               </h2>
               <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                ปลดล็อกแล้ว {completedCount} / {CATEGORIES.length} Kaizen Awards — คลิกปุ่มเล่นเพื่อเริ่มหมวดที่ต้องการได้ทันที
+                ปลดล็อกแล้ว {completedCount} / {CATEGORIES.length} Kaizen Awards — สุ่มภารกิจจากหน้าหลักเพื่อสะสมให้ครบ!
               </p>
             </div>
           </div>
@@ -263,14 +263,14 @@ export default function CollectionModal({
                   </p>
                 </div>
 
-                {/* Stats + Direct Play Button */}
+                {/* Stats Footer (Collection Gallery Only — No Manual Pick) */}
                 <div
                   className={`pt-2.5 border-t flex items-center justify-between gap-2 ${
                     isDark ? 'border-white/10' : 'border-slate-200/80'
                   }`}
                 >
                   {unlocked ? (
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-between w-full gap-2">
                       <div className="flex items-center gap-0.5">
                         {Array.from({ length: 3 }).map((_, idx) => (
                           <Star
@@ -296,22 +296,9 @@ export default function CollectionModal({
                     </div>
                   ) : (
                     <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      พร้อมท้าทาย {gridSize}×{gridSize}
+                      สุ่มภารกิจ 4×4 เพื่อปลดล็อกหมวดนี้
                     </span>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playStart();
-                      onSelectCategory(cat);
-                    }}
-                    style={{ backgroundColor: cat.accent }}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 hover:brightness-110 active:scale-95 transition-all shadow"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{unlocked ? 'เล่นอีกครั้ง' : 'เล่นหมวดนี้'}</span>
-                  </button>
                 </div>
               </div>
             );

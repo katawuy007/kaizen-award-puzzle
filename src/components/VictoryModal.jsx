@@ -37,7 +37,12 @@ export default function VictoryModal({
   const isDark = theme === 'dark';
 
   const [playerName, setPlayerName] = useState(playerProfile?.name || '');
-  const [department, setDepartment] = useState(playerProfile?.department || '');
+  const [department, setDepartment] = useState(() => {
+    const emp = (playerProfile?.employeeId || '').trim();
+    const dept = (playerProfile?.department || '').trim();
+    if (emp && dept) return `[${emp}] ${dept}`;
+    return dept || emp || '';
+  });
   const [scoreSaved, setScoreSaved] = useState(false);
   const [downloading, setDownloading] = useState(false);
 

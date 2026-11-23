@@ -1,14 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, RefreshCw, Sparkles, Puzzle } from 'lucide-react';
-import { DIFFICULTIES } from '../data/categories.js';
 import { sound } from '../utils/sound.js';
 
 export default function MissionModal({
   theme,
   category,
-  gridSize,
-  onChangeGridSize,
+  gridSize = 4,
   onStartPuzzle,
   onRespin,
   onClose,
@@ -113,32 +111,6 @@ export default function MissionModal({
                 {gridSize}×{gridSize} ({gridSize * gridSize} ชิ้น)
               </span>
             </div>
-          </div>
-
-          {/* Quick Difficulty Switcher inside Mission Modal */}
-          <div className="flex items-center justify-center gap-1.5 mb-3.5">
-            {DIFFICULTIES.map((d) => {
-              const active = gridSize === d.gridSize;
-              return (
-                <button
-                  key={d.gridSize}
-                  type="button"
-                  onClick={() => {
-                    sound.playButton();
-                    onChangeGridSize(d.gridSize);
-                  }}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold border transition-all ${
-                    active
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 shadow'
-                      : isDark
-                      ? 'bg-white/5 border-white/15 text-slate-300 hover:bg-white/10'
-                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {d.label} • {d.tag}
-                </button>
-              );
-            })}
           </div>
 
           {/* Exact Thai Description */}
