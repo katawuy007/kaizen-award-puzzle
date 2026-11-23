@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    font-family: 'Prompt', 'Kanit', system-ui, -apple-system, sans-serif;
+  }
+
+  /* DARK THEME: Deep Cosmic Neon Gala */
+  html.dark body {
+    color: #f8fafc;
+    background:
+      radial-gradient(ellipse 80% 55% at 15% 0%, rgba(56, 189, 248, 0.22), transparent 60%),
+      radial-gradient(ellipse 75% 50% at 88% 12%, rgba(168, 85, 247, 0.24), transparent 58%),
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgba(245, 158, 11, 0.14), transparent 62%),
+      linear-gradient(165deg, #050817 0%, #0b1230 48%, #070b1e 100%);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* LIGHT THEME: Radiant Kaizen Expo / Daylight Studio */
+  html:not(.dark) body {
+    color: #0f172a;
+    background:
+      radial-gradient(ellipse 80% 50% at 12% 0%, rgba(56, 189, 248, 0.22), transparent 58%),
+      radial-gradient(ellipse 70% 50% at 90% 8%, rgba(251, 191, 36, 0.24), transparent 55%),
+      radial-gradient(ellipse 75% 55% at 50% 100%, rgba(167, 139, 250, 0.18), transparent 60%),
+      linear-gradient(165deg, #f8fbff 0%, #eef4ff 48%, #fef8ef 100%);
+    background-attachment: fixed;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Adaptive Frosted Glass Panels */
+html.dark .glass-panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.09) 0%, rgba(15, 23, 56, 0.72) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 14px 36px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+html:not(.dark) .glass-panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 255, 0.74) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 34px -14px rgba(30, 58, 138, 0.14), 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Adaptive Arcade / Expo Grid Backdrop */
+html.dark .arcade-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+html:not(.dark) .arcade-grid-bg {
+  background-image:
+    radial-gradient(rgba(59, 130, 246, 0.16) 1.25px, transparent 1.25px);
+  background-size: 28px 28px;
+}
+
+/* Premium Tactile 3D Arcade CTA */
+.cta-button-glow {
+  box-shadow:
+    0 12px 32px -4px rgba(245, 158, 11, 0.55),
+    0 0 0 1.5px rgba(254, 243, 199, 0.55) inset,
+    0 6px 0 0 #b45309;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.15s ease;
+}
+
+.cta-button-glow:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 40px -4px rgba(245, 158, 11, 0.72),
+    0 0 0 1.5px rgba(254, 243, 199, 0.75) inset,
+    0 8px 0 0 #b45309;
+}
+
+.cta-button-glow:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 4px 16px -2px rgba(245, 158, 11, 0.45),
+    0 0 0 1px rgba(254, 243, 199, 0.4) inset,
+    0 2px 0 0 #92400e;
+}
+
+/* Holographic Foil Sheen for Unlocked Cards */
+.holo-sheen {
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.22) 45%,
+    rgba(250, 204, 21, 0.18) 52%,
+    transparent 75%
+  );
+}
+
+/* Custom thin adaptive scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 999px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.7);
+  border-radius: 999px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.38);
+  border-radius: 999px;
+}
+
+/* Prevent accidental drag/selection on puzzle canvas */
+.puzzle-surface {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
