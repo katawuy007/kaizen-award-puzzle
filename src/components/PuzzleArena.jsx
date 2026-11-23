@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home,
   Eye,
   EyeOff,
   Image as ImageIcon,
@@ -887,41 +886,22 @@ export default function PuzzleArena({
         <div className="max-w-7xl mx-auto flex flex-col gap-2">
           {/* Row 1: Navigation, Category Info, Live Stats + Theme Switch */}
           <div className="flex items-center justify-between gap-2">
-            {/* Left: Back + Category Badge */}
-            <div className="flex items-center gap-2 min-w-0">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playButton();
-                  onBack();
-                }}
-                className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                  isDark
-                    ? 'bg-white/10 hover:bg-white/15 border-white/15 text-slate-100'
-                    : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-800'
-                }`}
-                title="กลับหน้าสุ่ม"
+            {/* Left: Category Badge (Single-Play — No Back to Respin) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span
+                className="shrink-0 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-extrabold text-white shadow"
+                style={{ backgroundColor: category.accent }}
               >
-                <Home className="w-3.5 h-3.5 text-sky-500" />
-                <span className="hidden sm:inline">กลับหน้าสุ่ม</span>
-              </button>
-
-              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <span
-                  className="shrink-0 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-extrabold text-white shadow"
-                  style={{ backgroundColor: category.accent }}
-                >
-                  {category.code}
-                </span>
-                <span className="text-base sm:text-lg shrink-0">{category.icon}</span>
-                <h1
-                  className={`font-display font-bold text-xs sm:text-base truncate ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
-                  {category.title}
-                </h1>
-              </div>
+                {category.code}
+              </span>
+              <span className="text-base sm:text-lg shrink-0">{category.icon}</span>
+              <h1
+                className={`font-display font-bold text-xs sm:text-base truncate ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}
+              >
+                {category.title}
+              </h1>
             </div>
 
             {/* Right: Combo + Timer + Progress + Compact ThemeToggle */}

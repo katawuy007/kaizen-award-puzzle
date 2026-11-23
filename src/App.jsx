@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import {
-  CATEGORIES,
   loadProgress,
   saveProgress,
   clearProgress,
@@ -146,19 +145,31 @@ export default function App() {
     } catch {
       // ignore
     }
+    setDrawnCategory(null);
+    setVictoryData(null);
     setScreen('lobby');
+    setAutoSpinToken((t) => t + 1);
   }, []);
 
   const handleLogout = useCallback(() => {
     setDrawnCategory(null);
     setVictoryData(null);
+    setActiveCategory(null);
     setScreen('login');
   }, []);
 
-  const completedCount = useMemo(
-    () => CATEGORIES.filter((c) => progress[c.id]?.completed).length,
-    [progress]
-  );
+  const handleFinishSession = useCallback(() => {
+    setDrawnCategory(null);
+    setVictoryData(null);
+    setActiveCategory(null);
+    setPlayerProfile({ employeeId: '', department: '', name: '' });
+    try {
+      localStorage.removeItem(PROFILE_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setScreen('login');
+  }, []);
 
   const handleToggleMute = useCallback(() => {
     const nextMuted = sound.toggleMute();
@@ -185,11 +196,6 @@ export default function App() {
     setActiveCategory(category);
     setGameKey((k) => k + 1);
     setScreen('puzzle');
-  }, []);
-
-  const handleRespinFromMission = useCallback(() => {
-    setDrawnCategory(null);
-    setAutoSpinToken((t) => t + 1);
   }, []);
 
   const handlePuzzleComplete = useCallback(
@@ -233,45 +239,40 @@ export default function App() {
         gridSize: FIXED_GRID_SIZE,
         stats: { elapsedSeconds, hintsUsed, maxCombo, stars },
         isNewBest,
+        saveStatus: 'saving',
       });
-    },
-    [activeCategory, progress]
-  );
 
-  const handleSaveScore = useCallback(
-    async (entry) => {
-      const nextProfile = {
-        ...playerProfile,
-        name: entry.name,
-      };
-      setPlayerProfile(nextProfile);
-      try {
-        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(nextProfile));
-      } catch {
-        // ignore
-      }
+      // Auto-save player's score immediately to Hall of Fame using required login profile
+      const emp = (playerProfile?.employeeId || '').trim();
+      const dept = (playerProfile?.department || '').trim();
+      const formattedDept = emp && dept ? `[${emp}] ${dept}` : dept || emp || '';
 
-      const res = await submitLeaderboardScore(entry);
-      setLeaderboard(res.entries);
-      setLeaderboardSource(res.source);
+      submitLeaderboardScore({
+        name: (playerProfile?.name || 'ผู้ท้าชิง Kaizen').trim(),
+        department: formattedDept,
+        categoryId: activeCategory.id,
+        gridSize: FIXED_GRID_SIZE,
+        elapsedSeconds,
+        hintsUsed,
+        maxCombo,
+        stars,
+        quizBonus: false,
+      })
+        .then((res) => {
+          setLeaderboard(res.entries);
+          setLeaderboardSource(res.source);
+          setVictoryData((prev) => (prev ? { ...prev, saveStatus: 'saved' } : prev));
+        })
+        .catch(() => {
+          setVictoryData((prev) => (prev ? { ...prev, saveStatus: 'saved' } : prev));
+        });
     },
-    [playerProfile]
+    [activeCategory, progress, playerProfile]
   );
 
   const handleClearLeaderboard = useCallback(() => {
     clearLeaderboard();
     setLeaderboard([]);
-  }, []);
-
-  const handleNextRandomFromVictory = useCallback(() => {
-    setVictoryData(null);
-    setScreen('lobby');
-    setAutoSpinToken((t) => t + 1);
-  }, []);
-
-  const handleReplayCurrent = useCallback(() => {
-    setVictoryData(null);
-    setGameKey((k) => k + 1);
   }, []);
 
   const handleOpenCollection = useCallback((focusId = null) => {
@@ -293,7 +294,12 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           muted={muted}
+          bgmEnabled={bgmEnabled}
           onToggleMute={handleToggleMute}
+          onToggleBgm={handleToggleBgm}
+          leaderboardCount={leaderboard.length}
+          onOpenLeaderboard={() => setShowLeaderboard(true)}
+          onOpenQr={() => setShowQr(true)}
           initialProfile={playerProfile}
           onLogin={handleLogin}
         />
@@ -333,15 +339,12 @@ export default function App() {
           bgmEnabled={bgmEnabled}
           onToggleMute={handleToggleMute}
           onToggleBgm={handleToggleBgm}
-          onBack={() => {
-            setVictoryData(null);
-            setScreen('lobby');
-          }}
+          onBack={handleFinishSession}
           onComplete={handlePuzzleComplete}
         />
       )}
 
-      {/* Mission Reveal Overlay */}
+      {/* Mission Reveal Overlay (Single-Play — Press Play Once) */}
       <AnimatePresence>
         {drawnCategory && (
           <MissionModal
@@ -349,13 +352,11 @@ export default function App() {
             category={drawnCategory}
             gridSize={FIXED_GRID_SIZE}
             onStartPuzzle={handleStartPuzzle}
-            onRespin={handleRespinFromMission}
-            onClose={() => setDrawnCategory(null)}
           />
         )}
       </AnimatePresence>
 
-      {/* Victory & Kaizen Award Celebration Modal */}
+      {/* Victory & Kaizen Award Celebration Modal (One-Shot Finish) */}
       <AnimatePresence>
         {victoryData && (
           <VictoryModal
@@ -364,16 +365,10 @@ export default function App() {
             gridSize={FIXED_GRID_SIZE}
             stats={victoryData.stats}
             isNewBest={victoryData.isNewBest}
-            completedCount={completedCount}
+            saveStatus={victoryData.saveStatus}
             playerProfile={playerProfile}
-            onSaveScore={handleSaveScore}
-            onNextRandom={handleNextRandomFromVictory}
-            onReplay={handleReplayCurrent}
-            onOpenCollection={() => {
-              setVictoryData(null);
-              setScreen('lobby');
-              setCollectionState({ open: true, focusId: victoryData.category.id });
-            }}
+            onOpenLeaderboard={() => setShowLeaderboard(true)}
+            onFinish={handleFinishSession}
           />
         )}
       </AnimatePresence>

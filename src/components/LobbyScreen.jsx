@@ -50,6 +50,7 @@ export default function LobbyScreen({
 }) {
   const isDark = theme === 'dark';
   const [isSpinning, setIsSpinning] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
   const [highlightedId, setHighlightedId] = useState(null);
   const [cardWidth, setCardWidth] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 640 ? CARD_WIDTH_MOBILE : CARD_WIDTH_DESKTOP
@@ -60,7 +61,8 @@ export default function LobbyScreen({
   const offsetRef = useRef(0);
   const animFrameRef = useRef(null);
   const spinningRef = useRef(false);
-  const lastAutoTokenRef = useRef(autoSpinToken);
+  const hasSpunRef = useRef(false);
+  const lastAutoTokenRef = useRef(0);
 
   const completedCount = useMemo(
     () => CATEGORIES.filter((c) => progress[c.id]?.completed).length,
@@ -113,9 +115,11 @@ export default function LobbyScreen({
   }, []);
 
   const startSpin = useCallback(() => {
-    if (spinningRef.current) return;
+    if (spinningRef.current || hasSpunRef.current) return;
     spinningRef.current = true;
+    hasSpunRef.current = true;
     setIsSpinning(true);
+    setHasSpun(true);
     setHighlightedId(null);
 
     const viewportW = viewportRef.current?.clientWidth || 800;
@@ -179,10 +183,12 @@ export default function LobbyScreen({
 
   useEffect(() => {
     if (autoSpinToken && autoSpinToken !== lastAutoTokenRef.current) {
-      lastAutoTokenRef.current = autoSpinToken;
       const timer = setTimeout(() => {
+        lastAutoTokenRef.current = autoSpinToken;
+        hasSpunRef.current = false;
+        setHasSpun(false);
         startSpin();
-      }, 180);
+      }, 260);
       return () => clearTimeout(timer);
     }
   }, [autoSpinToken, startSpin]);
@@ -425,7 +431,7 @@ export default function LobbyScreen({
             </span>
           </h1>
           <p className={`mt-1 text-xs sm:text-sm max-w-xl mx-auto ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-            กดปุ่มสุ่มเพื่อหมุนวงล้อรับภาพภารกิจ แล้วต่อจิ๊กซอร์ {gridSize * gridSize} ชิ้นให้สำเร็จเพื่อปลดล็อกรางวัล!
+            ระบบกำลังสุ่มภาพภารกิจ Kaizen Award ของคุณ เตรียมต่อจิ๊กซอร์ {gridSize * gridSize} ชิ้นให้สำเร็จ!
           </p>
         </motion.div>
 
@@ -630,13 +636,13 @@ export default function LobbyScreen({
           </div>
         </div>
 
-        {/* Primary Arcade Random Draw Button (4x4 Only — No Manual Pick) */}
+        {/* Primary Arcade Random Draw Button (Auto-Spins Once on Enter) */}
         <div className="flex items-center justify-center w-full">
           <button
             type="button"
-            disabled={isSpinning}
+            disabled={isSpinning || hasSpun}
             onClick={startSpin}
-            className="cta-button-glow relative overflow-hidden group w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-display font-extrabold text-base sm:text-xl tracking-wide flex items-center justify-center gap-2.5 whitespace-nowrap disabled:opacity-75 disabled:cursor-wait"
+            className="cta-button-glow relative overflow-hidden group w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-display font-extrabold text-base sm:text-xl tracking-wide flex items-center justify-center gap-2.5 whitespace-nowrap disabled:opacity-80 disabled:cursor-wait"
           >
             <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
               <span className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent animate-shimmer" />
@@ -647,7 +653,11 @@ export default function LobbyScreen({
               }`}
             />
             <span>
-              {isSpinning ? 'กำลังสุ่มภารกิจ Kaizen Award...' : 'สุ่มรับภารกิจ Kaizen Award!'}
+              {isSpinning
+                ? 'กำลังสุ่มภารกิจ Kaizen Award...'
+                : hasSpun
+                ? 'สุ่มภารกิจสำเร็จ! กำลังเปิดภารกิจ...'
+                : 'สุ่มรับภารกิจ Kaizen Award!'}
             </span>
           </button>
         </div>

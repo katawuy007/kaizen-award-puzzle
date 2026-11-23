@@ -2,13 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
-  Trophy,
   Star,
   Clock,
   Lightbulb,
   Flame,
-  Dices,
-  RotateCcw,
   Award,
   Sparkles,
   Download,
@@ -16,34 +13,34 @@ import {
   CheckCircle2,
   XCircle,
   HelpCircle,
+  LogOut,
+  User,
+  Building2,
+  IdCard,
 } from 'lucide-react';
-import { CATEGORIES, formatTime } from '../data/categories.js';
+import { formatTime } from '../data/categories.js';
 import { sound } from '../utils/sound.js';
 import { downloadCategoryCertificate } from '../utils/certificate.js';
 
 export default function VictoryModal({
   theme,
   category,
-  gridSize = 5,
+  gridSize = 4,
   stats,
   isNewBest,
-  completedCount,
+  saveStatus = 'saved',
   playerProfile,
-  onSaveScore,
-  onNextRandom,
-  onReplay,
-  onOpenCollection,
+  onOpenLeaderboard,
+  onFinish,
 }) {
   const isDark = theme === 'dark';
 
-  const [playerName, setPlayerName] = useState(playerProfile?.name || '');
-  const [department, setDepartment] = useState(() => {
-    const emp = (playerProfile?.employeeId || '').trim();
-    const dept = (playerProfile?.department || '').trim();
-    if (emp && dept) return `[${emp}] ${dept}`;
-    return dept || emp || '';
-  });
-  const [scoreSaved, setScoreSaved] = useState(false);
+  const playerName = (playerProfile?.name || '').trim();
+  const employeeId = (playerProfile?.employeeId || '').trim();
+  const rawDepartment = (playerProfile?.department || '').trim();
+  const formattedDepartment =
+    employeeId && rawDepartment ? `[${employeeId}] ${rawDepartment}` : rawDepartment || employeeId || '';
+
   const [downloading, setDownloading] = useState(false);
 
   // Bonus Kaizen Mini-Quiz state
@@ -117,24 +114,6 @@ export default function VictoryModal({
     }
   };
 
-  const handleSaveLeaderboard = (e) => {
-    e.preventDefault();
-    if (scoreSaved) return;
-    sound.playReveal();
-    onSaveScore({
-      name: playerName.trim() || 'ผู้ท้าชิง Kaizen',
-      department: department.trim(),
-      categoryId: category.id,
-      gridSize,
-      elapsedSeconds: stats.elapsedSeconds,
-      hintsUsed: stats.hintsUsed,
-      maxCombo: stats.maxCombo,
-      stars: stats.stars,
-      quizBonus: quizCorrect,
-    });
-    setScoreSaved(true);
-  };
-
   const handleDownloadCertificate = async () => {
     sound.playButton();
     setDownloading(true);
@@ -144,7 +123,7 @@ export default function VictoryModal({
         stats,
         gridSize,
         playerName,
-        department,
+        department: formattedDepartment,
         quizBonus: quizCorrect,
       });
     } finally {
@@ -153,7 +132,6 @@ export default function VictoryModal({
   };
 
   const stars = stats?.stars || 1;
-  const allCollected = completedCount >= CATEGORIES.length;
 
   return (
     <motion.div
@@ -211,9 +189,7 @@ export default function VictoryModal({
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>
-                {allCollected
-                  ? '🎉 สุดยอด! สะสมครบทั้ง 7 หมวดแล้ว!'
-                  : `ภารกิจ ${gridSize}×${gridSize} สำเร็จ! ปลดล็อกรางวัล Kaizen Award`}
+                ภารกิจ {gridSize}×{gridSize} สำเร็จ! ปลดล็อกรางวัล Kaizen Award
               </span>
             </div>
 
@@ -392,66 +368,46 @@ export default function VictoryModal({
                 </div>
               </div>
 
-              {/* Hall of Fame Score Registration Form */}
-              <form
-                onSubmit={handleSaveLeaderboard}
+              {/* Auto-Saved Hall of Fame Confirmation Card */}
+              <div
                 className={`rounded-2xl border p-3 ${
-                  isDark ? 'bg-indigo-950/50 border-indigo-400/25' : 'bg-indigo-50/75 border-indigo-200'
+                  isDark
+                    ? 'bg-emerald-950/40 border-emerald-400/35'
+                    : 'bg-emerald-50/85 border-emerald-300'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <span
                     className={`text-xs font-bold flex items-center gap-1.5 ${
-                      isDark ? 'text-indigo-200' : 'text-indigo-900'
+                      isDark ? 'text-emerald-300' : 'text-emerald-800'
                     }`}
                   >
-                    <Medal className="w-3.5 h-3.5 text-amber-400" />
-                    บันทึกชื่อขึ้นกระดานอันดับ Hall of Fame
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    {saveStatus === 'saving'
+                      ? 'กำลังบันทึกคะแนนขึ้น Hall of Fame...'
+                      : 'บันทึกคะแนนขึ้น Hall of Fame เรียบร้อยแล้ว!'}
                   </span>
-                  {scoreSaved && (
-                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      บันทึกแล้ว!
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                  <span className={`inline-flex items-center gap-1 font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    {playerName || 'ผู้ท้าชิง Kaizen'}
+                  </span>
+                  {employeeId && (
+                    <span className={`inline-flex items-center gap-1 ${isDark ? 'text-sky-200' : 'text-sky-800'}`}>
+                      <IdCard className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      {employeeId}
+                    </span>
+                  )}
+                  {rawDepartment && (
+                    <span className={`inline-flex items-center gap-1 ${isDark ? 'text-violet-200' : 'text-violet-800'}`}>
+                      <Building2 className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                      {rawDepartment}
                     </span>
                   )}
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    placeholder="ชื่อเล่นของคุณ..."
-                    value={playerName}
-                    disabled={scoreSaved}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    maxLength={28}
-                    className={`flex-1 px-3 py-1.5 rounded-xl text-xs border outline-none ${
-                      isDark
-                        ? 'bg-slate-900/90 border-white/15 text-white placeholder:text-slate-500 focus:border-amber-400'
-                        : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500'
-                    }`}
-                  />
-                  <input
-                    type="text"
-                    placeholder="แผนก / หน่วยงาน (ถ้ามี)"
-                    value={department}
-                    disabled={scoreSaved}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    maxLength={28}
-                    className={`flex-1 px-3 py-1.5 rounded-xl text-xs border outline-none ${
-                      isDark
-                        ? 'bg-slate-900/90 border-white/15 text-white placeholder:text-slate-500 focus:border-amber-400'
-                        : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-indigo-500'
-                    }`}
-                  />
-                  <button
-                    type="submit"
-                    disabled={scoreSaved}
-                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 hover:brightness-110 disabled:opacity-50 text-white text-xs font-bold whitespace-nowrap transition-all"
-                  >
-                    {scoreSaved ? 'บันทึกสำเร็จ' : 'บันทึกอันดับ'}
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
 
@@ -533,70 +489,34 @@ export default function VictoryModal({
             </div>
           )}
 
-          {/* Collection Progress Strip */}
-          <div
-            className={`rounded-xl border px-3.5 py-2 mb-4 flex items-center justify-between gap-3 ${
-              isDark
-                ? 'bg-amber-400/10 border-amber-400/25 text-amber-200'
-                : 'bg-amber-50 border-amber-300/80 text-amber-900'
-            }`}
-          >
-            <span className="text-xs font-semibold flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-amber-500" />
-              ปลดล็อกแล้ว {completedCount} / {CATEGORIES.length} Kaizen Awards
-            </span>
-            <div className={`w-28 h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-900' : 'bg-amber-200'}`}>
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-emerald-500"
-                style={{ width: `${(completedCount / CATEGORIES.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
+          {/* One-Shot Finish Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center gap-2.5">
             <button
               type="button"
               onClick={() => {
                 sound.playButton();
-                onNextRandom();
+                onFinish();
               }}
               className="cta-button-glow w-full sm:flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-slate-950 font-display font-extrabold text-base flex items-center justify-center gap-2"
             >
-              <Dices className="w-5 h-5" />
-              <span>สุ่มหมวดถัดไป!</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.playStart();
-                onReplay();
-              }}
-              className={`w-full sm:w-auto py-3.5 px-4 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-                isDark
-                  ? 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
-                  : 'bg-slate-100 hover:bg-slate-200/80 border-slate-300 text-slate-800'
-              }`}
-            >
-              <RotateCcw className="w-4 h-4 text-sky-500" />
-              <span>เล่นหมวดนี้อีกครั้ง</span>
+              <LogOut className="w-5 h-5" />
+              <span>เสร็จสิ้นภารกิจ / กลับหน้าล็อกอิน</span>
             </button>
 
             <button
               type="button"
               onClick={() => {
                 sound.playButton();
-                onOpenCollection();
+                onOpenLeaderboard();
               }}
-              className={`w-full sm:w-auto py-3.5 px-4 rounded-2xl border text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+              className={`w-full sm:w-auto py-3.5 px-5 rounded-2xl border text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
                 isDark
-                  ? 'bg-white/10 hover:bg-white/15 border-white/15 text-amber-200'
-                  : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800'
+                  ? 'bg-sky-500/15 hover:bg-sky-500/25 border-sky-400/40 text-sky-200'
+                  : 'bg-sky-50 hover:bg-sky-100 border-sky-300 text-sky-800'
               }`}
             >
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <span>ดูคอลเลกชันทั้งหมด</span>
+              <Medal className="w-4 h-4 text-sky-500" />
+              <span>ดูอันดับ Hall of Fame</span>
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, RefreshCw, Sparkles, Puzzle } from 'lucide-react';
+import { Rocket, Sparkles, Puzzle } from 'lucide-react';
 import { sound } from '../utils/sound.js';
 
 export default function MissionModal({
@@ -8,8 +8,6 @@ export default function MissionModal({
   category,
   gridSize = 4,
   onStartPuzzle,
-  onRespin,
-  onClose,
 }) {
   if (!category) return null;
   const isDark = theme === 'dark';
@@ -22,7 +20,6 @@ export default function MissionModal({
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md ${
         isDark ? 'bg-slate-950/80' : 'bg-slate-900/45'
       }`}
-      onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.84, y: 24 }}
@@ -122,8 +119,8 @@ export default function MissionModal({
             <p className="text-xs sm:text-sm leading-relaxed">{category.description}</p>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+          {/* Single Primary CTA Button (One-Shot Play — No Respin) */}
+          <div className="w-full">
             <button
               type="button"
               onClick={() => {
@@ -134,26 +131,10 @@ export default function MissionModal({
                 background: `linear-gradient(135deg, ${category.accent}, #F59E0B)`,
                 boxShadow: `0 10px 28px -6px ${category.accent}99`,
               }}
-              className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl font-display font-extrabold text-base sm:text-lg text-white flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
+              className="w-full py-4 px-6 rounded-2xl font-display font-extrabold text-base sm:text-lg text-white flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all"
             >
               <Rocket className="w-5 h-5" />
-              <span>เริ่มต่อจิ๊กซอร์เลย!</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.playButton();
-                onRespin();
-              }}
-              className={`w-full sm:w-auto py-3.5 px-5 rounded-2xl border font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
-                isDark
-                  ? 'bg-white/10 hover:bg-white/15 border-white/15 text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200/80 border-slate-300/80 text-slate-700'
-              }`}
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>สุ่มใหม่</span>
+              <span>เริ่มเล่นต่อจิ๊กซอร์เลย!</span>
             </button>
           </div>
         </div>

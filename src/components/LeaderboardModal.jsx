@@ -60,7 +60,7 @@ export default function LeaderboardModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
-      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md ${
+      className={`fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 backdrop-blur-md ${
         isDark ? 'bg-slate-950/85' : 'bg-slate-900/45'
       }`}
     >

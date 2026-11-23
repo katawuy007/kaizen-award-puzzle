@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Rocket,
@@ -11,6 +11,9 @@ import {
   Cog,
   Trophy,
   Puzzle,
+  Medal,
+  QrCode,
+  Music,
 } from 'lucide-react';
 import { CATEGORIES } from '../data/categories.js';
 import { sound } from '../utils/sound.js';
@@ -20,7 +23,12 @@ export default function LoginScreen({
   theme,
   onToggleTheme,
   muted,
+  bgmEnabled,
   onToggleMute,
+  onToggleBgm,
+  leaderboardCount = 0,
+  onOpenLeaderboard,
+  onOpenQr,
   initialProfile,
   onLogin,
 }) {
@@ -28,21 +36,38 @@ export default function LoginScreen({
   const [employeeId, setEmployeeId] = useState(initialProfile?.employeeId || '');
   const [department, setDepartment] = useState(initialProfile?.department || '');
   const [name, setName] = useState(initialProfile?.name || '');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({ employeeId: '', department: '', name: '' });
+
+  const empIdRef = useRef(null);
+  const deptRef = useRef(null);
+  const nameRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const trimmedEmpId = employeeId.trim();
+    const trimmedDept = department.trim();
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError('กรุณากรอกชื่อผู้เล่นก่อนเข้าสู่เกมนะครับ');
+
+    const nextErrors = {
+      employeeId: trimmedEmpId ? '' : 'กรุณากรอกรหัสพนักงาน',
+      department: trimmedDept ? '' : 'กรุณากรอกชื่อฝ่าย / หน่วยงาน',
+      name: trimmedName ? '' : 'กรุณากรอกชื่อ - นามสกุล',
+    };
+
+    if (nextErrors.employeeId || nextErrors.department || nextErrors.name) {
+      setErrors(nextErrors);
       sound.playQuizWrong();
+      if (nextErrors.employeeId) empIdRef.current?.focus();
+      else if (nextErrors.department) deptRef.current?.focus();
+      else if (nextErrors.name) nameRef.current?.focus();
       return;
     }
-    setError('');
+
+    setErrors({ employeeId: '', department: '', name: '' });
     sound.playStart();
     onLogin({
-      employeeId: employeeId.trim().slice(0, 24),
-      department: department.trim().slice(0, 32),
+      employeeId: trimmedEmpId.slice(0, 24),
+      department: trimmedDept.slice(0, 32),
       name: trimmedName.slice(0, 32),
     });
   };
@@ -86,8 +111,66 @@ export default function LoginScreen({
           <span className={isDark ? 'text-amber-200' : 'text-amber-700'}>KAIZEN AWARD • 4×4 CHALLENGE</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+          {onOpenLeaderboard && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.playButton();
+                onOpenLeaderboard();
+              }}
+              className={`glass-panel transition-all px-2.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold whitespace-nowrap ${
+                isDark
+                  ? 'hover:bg-white/15 text-sky-200 border-sky-400/35'
+                  : 'hover:bg-white text-sky-700 border-sky-300/80'
+              }`}
+              title="กระดานอันดับ Hall of Fame"
+            >
+              <Medal className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="hidden sm:inline">อันดับ</span>
+              {leaderboardCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-sky-500/25 text-sky-300">
+                  {leaderboardCount}
+                </span>
+              )}
+            </button>
+          )}
+          {onOpenQr && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.playButton();
+                onOpenQr();
+              }}
+              className={`glass-panel transition-all p-2.5 rounded-xl hidden sm:flex items-center justify-center ${
+                isDark ? 'hover:bg-white/15 text-slate-200' : 'hover:bg-white text-slate-700'
+              }`}
+              title="แสดง QR Code สำหรับเล่นบนมือถือหน้าบูธ"
+              aria-label="QR Code"
+            >
+              <QrCode className="w-4 h-4 text-violet-400" />
+            </button>
+          )}
+          {onToggleBgm && (
+            <button
+              type="button"
+              onClick={onToggleBgm}
+              aria-label={bgmEnabled ? 'ปิดเพลงประกอบ' : 'เปิดเพลงประกอบ'}
+              className={`glass-panel transition-all p-2.5 rounded-xl hidden sm:flex items-center justify-center ${
+                bgmEnabled
+                  ? isDark
+                    ? 'border-fuchsia-400/60 bg-fuchsia-500/20 text-fuchsia-300'
+                    : 'border-fuchsia-400 bg-fuchsia-100 text-fuchsia-700'
+                  : isDark
+                  ? 'hover:bg-white/15 text-slate-400'
+                  : 'hover:bg-white text-slate-400'
+              }`}
+              title={bgmEnabled ? 'ปิดเพลงประกอบ (BGM)' : 'เปิดเพลงประกอบสนุกๆ (BGM)'}
+            >
+              <Music className={`w-4 h-4 ${bgmEnabled ? 'animate-pulse' : ''}`} />
+            </button>
+          )}
           <button
             type="button"
             onClick={onToggleMute}
@@ -163,7 +246,7 @@ export default function LoginScreen({
                   </span>
                 </h1>
                 <p className={`mt-1 text-xs sm:text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  ลงทะเบียนผู้ท้าชิง เพื่อสุ่มภารกิจต่อจิ๊กซอร์ 4×4 สุดท้าทาย!
+                  กรอกข้อมูลให้ครบทั้ง 3 ช่อง เพื่อสุ่มภารกิจต่อจิ๊กซอร์ 4×4 แล้วเล่นได้เลย!
                 </p>
 
                 {/* 7-Category Mini Icon Strip */}
@@ -183,9 +266,9 @@ export default function LoginScreen({
                 </div>
               </div>
 
-              {/* 3-Field Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-3.5">
-                {/* 1. รหัสพนักงาน (Optional) */}
+              {/* 3-Field Login Form (All Required) */}
+              <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+                {/* 1. รหัสพนักงาน (REQUIRED) */}
                 <div>
                   <label
                     htmlFor="kaizen-emp-id"
@@ -196,28 +279,38 @@ export default function LoginScreen({
                     <span className="flex items-center gap-1.5">
                       <IdCard className="w-3.5 h-3.5 text-sky-400" />
                       1. รหัสพนักงาน
+                      <span className="text-rose-500 font-extrabold">*</span>
                     </span>
-                    <span className={`text-[10px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
-                      ไม่บังคับ
-                    </span>
+                    <span className="text-[10px] font-bold text-amber-400">จำเป็นต้องกรอก</span>
                   </label>
                   <input
+                    ref={empIdRef}
                     id="kaizen-emp-id"
                     type="text"
+                    required
+                    aria-required="true"
                     value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="เช่น EMP-1024 หรือ 650123"
+                    onChange={(e) => {
+                      setEmployeeId(e.target.value);
+                      if (errors.employeeId) setErrors((prev) => ({ ...prev, employeeId: '' }));
+                    }}
+                    placeholder="เช่น S0001"
                     maxLength={24}
                     autoComplete="off"
-                    className={`w-full px-3.5 py-2.5 rounded-2xl text-sm border outline-none transition-all ${
-                      isDark
-                        ? 'bg-slate-900/85 border-white/15 text-white placeholder:text-slate-500 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25'
+                    className={`w-full px-3.5 py-2.5 rounded-2xl text-sm font-medium border outline-none transition-all ${
+                      errors.employeeId
+                        ? isDark
+                          ? 'border-rose-500 ring-2 ring-rose-500/30 bg-rose-500/10 text-white placeholder:text-rose-300/60'
+                          : 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50 text-slate-900 placeholder:text-rose-400'
+                        : isDark
+                        ? 'bg-slate-900/85 border-sky-400/35 text-white placeholder:text-slate-500 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25'
                         : 'bg-slate-50 border-slate-300/90 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20'
                     }`}
                   />
+                  {errors.employeeId && <p className="mt-1 text-xs font-semibold text-rose-400">{errors.employeeId}</p>}
                 </div>
 
-                {/* 2. ชื่อฝ่าย / หน่วยงาน (Optional) */}
+                {/* 2. ชื่อฝ่าย / หน่วยงาน (REQUIRED) */}
                 <div>
                   <label
                     htmlFor="kaizen-dept"
@@ -228,25 +321,35 @@ export default function LoginScreen({
                     <span className="flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-violet-400" />
                       2. ชื่อฝ่าย / หน่วยงาน
+                      <span className="text-rose-500 font-extrabold">*</span>
                     </span>
-                    <span className={`text-[10px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
-                      ไม่บังคับ
-                    </span>
+                    <span className="text-[10px] font-bold text-amber-400">จำเป็นต้องกรอก</span>
                   </label>
                   <input
+                    ref={deptRef}
                     id="kaizen-dept"
                     type="text"
+                    required
+                    aria-required="true"
                     value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="เช่น ฝ่ายผลิต / ฝ่ายวิศวกรรม / IT"
+                    onChange={(e) => {
+                      setDepartment(e.target.value);
+                      if (errors.department) setErrors((prev) => ({ ...prev, department: '' }));
+                    }}
+                    placeholder="เช่น MNF / HSM / GIT / QMS"
                     maxLength={32}
                     autoComplete="organization"
-                    className={`w-full px-3.5 py-2.5 rounded-2xl text-sm border outline-none transition-all ${
-                      isDark
-                        ? 'bg-slate-900/85 border-white/15 text-white placeholder:text-slate-500 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/25'
+                    className={`w-full px-3.5 py-2.5 rounded-2xl text-sm font-medium border outline-none transition-all ${
+                      errors.department
+                        ? isDark
+                          ? 'border-rose-500 ring-2 ring-rose-500/30 bg-rose-500/10 text-white placeholder:text-rose-300/60'
+                          : 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50 text-slate-900 placeholder:text-rose-400'
+                        : isDark
+                        ? 'bg-slate-900/85 border-violet-400/35 text-white placeholder:text-slate-500 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/25'
                         : 'bg-slate-50 border-slate-300/90 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
                     }`}
                   />
+                  {errors.department && <p className="mt-1 text-xs font-semibold text-rose-400">{errors.department}</p>}
                 </div>
 
                 {/* 3. ชื่อผู้เล่น / User (REQUIRED) */}
@@ -259,32 +362,36 @@ export default function LoginScreen({
                   >
                     <span className="flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-amber-400" />
-                      3. ชื่อผู้เล่น (User)
+                      3. ชื่อ - นามสกุล (User)
                       <span className="text-rose-500 font-extrabold">*</span>
                     </span>
                     <span className="text-[10px] font-bold text-amber-400">จำเป็นต้องกรอก</span>
                   </label>
                   <input
+                    ref={nameRef}
                     id="kaizen-username"
                     type="text"
                     required
+                    aria-required="true"
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
-                      if (error) setError('');
+                      if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
                     }}
-                    placeholder="กรอกชื่อเล่นหรือชื่อของคุณ..."
+                    placeholder="กรอกชื่อ - นามสกุลของคุณ..."
                     maxLength={32}
                     autoComplete="name"
-                    className={`w-full px-3.5 py-3 rounded-2xl text-sm font-medium border outline-none transition-all ${
-                      error
-                        ? 'border-rose-500 ring-2 ring-rose-500/30 bg-rose-500/10 text-white'
+                    className={`w-full px-3.5 py-2.5 rounded-2xl text-sm font-medium border outline-none transition-all ${
+                      errors.name
+                        ? isDark
+                          ? 'border-rose-500 ring-2 ring-rose-500/30 bg-rose-500/10 text-white placeholder:text-rose-300/60'
+                          : 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50 text-slate-900 placeholder:text-rose-400'
                         : isDark
                         ? 'bg-slate-900/85 border-amber-400/40 text-white placeholder:text-slate-500 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/25'
                         : 'bg-amber-50/40 border-amber-400/70 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/25'
                     }`}
                   />
-                  {error && <p className="mt-1.5 text-xs font-semibold text-rose-400">{error}</p>}
+                  {errors.name && <p className="mt-1 text-xs font-semibold text-rose-400">{errors.name}</p>}
                 </div>
 
                 {/* Primary Tactile CTA */}
@@ -296,7 +403,7 @@ export default function LoginScreen({
                     <span className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent animate-shimmer" />
                   </span>
                   <Rocket className="w-5 h-5 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                  <span>เข้าสู่ภารกิจ KAIZEN AWARD!</span>
+                  <span>เข้าสู่เกมและสุ่มภารกิจ!</span>
                 </button>
               </form>
             </div>
