@@ -25,7 +25,7 @@ import CollectionModal from './components/CollectionModal.jsx';
 import LeaderboardModal from './components/LeaderboardModal.jsx';
 import QrShareModal from './components/QrShareModal.jsx';
 
-const THEME_STORAGE_KEY = 'kaizen_award_theme_v1';
+const THEME_STORAGE_KEY = 'kaizen_award_theme_v2';
 const PROFILE_STORAGE_KEY = 'kaizen_award_player_profile_v1';
 const FIXED_GRID_SIZE = 4; // 4x4 (16 pieces) only
 
@@ -36,7 +36,7 @@ function loadInitialTheme() {
   } catch {
     // ignore
   }
-  return 'dark';
+  return 'light';
 }
 
 function loadPlayerProfile() {
