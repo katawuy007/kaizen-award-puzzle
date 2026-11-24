@@ -4,15 +4,12 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
-  Lightbulb,
   Puzzle,
-  Sparkles,
   Volume2,
   VolumeX,
   Clock,
   Flame,
   X,
-  LayoutGrid,
   Music,
 } from 'lucide-react';
 import { formatTime } from '../data/categories.js';
@@ -66,11 +63,9 @@ export default function PuzzleArena({
   const [loadError, setLoadError] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [lockedCount, setLockedCount] = useState(0);
-  const [hintsUsed, setHintsUsed] = useState(0);
   const [activeCombo, setActiveCombo] = useState(0);
   const [showGhost, setShowGhost] = useState(true);
   const [showPeek, setShowPeek] = useState(false);
-  const [edgeFilter, setEdgeFilter] = useState(false);
 
   const gameRef = useRef({
     theme,
@@ -109,10 +104,6 @@ export default function PuzzleArena({
     gameRef.current.showGhost = showGhost;
   }, [showGhost]);
 
-  useEffect(() => {
-    gameRef.current.edgeFilter = edgeFilter;
-  }, [edgeFilter]);
-
   const arrangeTray = useCallback((useEdgeOnly, instant = false) => {
     const g = gameRef.current;
     if (!g.layout || !g.pieces.length) return;
@@ -145,11 +136,9 @@ export default function PuzzleArena({
     setLoadError(false);
     setElapsedSeconds(0);
     setLockedCount(0);
-    setHintsUsed(0);
     setActiveCombo(0);
     setShowGhost(true);
     setShowPeek(false);
-    setEdgeFilter(false);
 
     const g = gameRef.current;
     g.image = null;
@@ -804,21 +793,12 @@ export default function PuzzleArena({
       const newLockedCount = g.pieces.filter((item) => item.locked).length;
       setLockedCount(newLockedCount);
 
-      if (g.edgeFilter && newLockedCount < totalPieces) {
-        const remainingEdgeCount = g.pieces.filter((item) => !item.locked && item.isEdge).length;
-        if (remainingEdgeCount === 0) {
-          g.edgeFilter = false;
-          setEdgeFilter(false);
-          arrangeTray(false, false);
-        }
-      }
-
       if (newLockedCount === totalPieces) {
         g.completed = true;
         g.completionFlashStart = now;
         const finalStats = {
           elapsedSeconds: g.elapsedSeconds,
-          hintsUsed: g.hintsUsed,
+          hintsUsed: 0,
           maxCombo: Math.max(1, g.maxCombo),
         };
         setTimeout(() => {
@@ -836,39 +816,6 @@ export default function PuzzleArena({
       p.inTray = insideTray;
       p.targetScale = insideTray ? g.layout.trayScale : 1.0;
     }
-  };
-
-  const handleHint = () => {
-    const g = gameRef.current;
-    if (g.completed || !g.layout) return;
-
-    const unplaced = g.pieces.filter((p) => !p.locked);
-    if (!unplaced.length) return;
-
-    const edgePool = g.edgeFilter ? unplaced.filter((p) => p.isEdge) : [];
-    const pool = edgePool.length > 0 ? edgePool : unplaced;
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
-
-    g.zCounter += 1;
-    chosen.z = g.zCounter;
-    g.hintPieceId = chosen.id;
-    g.hintUntil = performance.now() + 4500;
-    g.hintsUsed += 1;
-    setHintsUsed(g.hintsUsed);
-    sound.playHint();
-  };
-
-  const handleToggleEdgeFilter = () => {
-    const next = !edgeFilter;
-    setEdgeFilter(next);
-    gameRef.current.edgeFilter = next;
-    sound.playButton();
-    arrangeTray(next, false);
-  };
-
-  const handleTidyTray = () => {
-    sound.playButton();
-    arrangeTray(edgeFilter, false);
   };
 
   const progressPct = Math.round((lockedCount / totalPieces) * 100);
@@ -990,8 +937,8 @@ export default function PuzzleArena({
               </span>
             </div>
 
-            {/* Player-Friendly Control Strip (Zero horizontal clipping on 390px mobile) */}
-            <div className="grid grid-cols-6 sm:flex sm:flex-wrap items-center gap-1 sm:gap-2 w-full lg:w-auto">
+            {/* Player-Friendly Control Strip (Ghost, Peek, Sound) */}
+            <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
               {/* Ghost Guide */}
               <button
                 type="button"
@@ -999,7 +946,7 @@ export default function PuzzleArena({
                   sound.playButton();
                   setShowGhost((v) => !v);
                 }}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all whitespace-nowrap ${
                   showGhost
                     ? isDark
                       ? 'bg-sky-500/25 border-sky-400/60 text-sky-200'
@@ -1021,7 +968,7 @@ export default function PuzzleArena({
                   sound.playButton();
                   setShowPeek(true);
                 }}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all whitespace-nowrap ${
                   isDark
                     ? 'bg-white/5 hover:bg-white/15 border-white/15 text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700'
@@ -1033,62 +980,12 @@ export default function PuzzleArena({
                 <span className="hidden sm:inline">ดูภาพต้นฉบับ</span>
               </button>
 
-              {/* Hint */}
-              <button
-                type="button"
-                onClick={handleHint}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
-                  isDark
-                    ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-400/50 text-amber-200'
-                    : 'bg-amber-100 hover:bg-amber-200/80 border-amber-400 text-amber-900'
-                }`}
-                title="ชี้ตำแหน่งชิ้นส่วน 1 ชิ้น"
-              >
-                <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>ตัวช่วย{hintsUsed > 0 ? ` (${hintsUsed})` : ''}</span>
-              </button>
-
-              {/* Edge Filter */}
-              <button
-                type="button"
-                onClick={handleToggleEdgeFilter}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
-                  edgeFilter
-                    ? isDark
-                      ? 'bg-emerald-500/25 border-emerald-400/60 text-emerald-200'
-                      : 'bg-emerald-100 border-emerald-400 text-emerald-800'
-                    : isDark
-                    ? 'bg-white/5 border-white/15 text-slate-300 hover:bg-white/10'
-                    : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200/80'
-                }`}
-                title="คัดเฉพาะชิ้นขอบมาไว้ในถาด"
-              >
-                <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-                <span>ชิ้นขอบ</span>
-              </button>
-
-              {/* Tidy Tray */}
-              <button
-                type="button"
-                onClick={handleTidyTray}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
-                  isDark
-                    ? 'bg-white/5 hover:bg-white/15 border-white/15 text-slate-200'
-                    : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700'
-                }`}
-                title="จัดเรียงชิ้นส่วนที่เหลือในถาดให้เป็นระเบียบ"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                <span className="sm:hidden">จัดถาด</span>
-                <span className="hidden sm:inline">จัดเรียงถาด</span>
-              </button>
-
               {/* Sound Toggle */}
               <button
                 type="button"
                 onClick={onToggleMute}
                 aria-label={muted ? 'เปิดเสียง' : 'ปิดเสียง'}
-                className={`px-1 sm:px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 border transition-all whitespace-nowrap ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all whitespace-nowrap ${
                   isDark
                     ? 'bg-white/5 hover:bg-white/15 border-white/15 text-slate-200'
                     : 'bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700'

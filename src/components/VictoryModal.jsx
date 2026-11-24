@@ -4,7 +4,6 @@ import confetti from 'canvas-confetti';
 import {
   Star,
   Clock,
-  Lightbulb,
   Flame,
   Award,
   Sparkles,
@@ -299,8 +298,8 @@ export default function VictoryModal({
                 </p>
               </div>
 
-              {/* 3 Performance Stat Chips */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* 2 Performance Stat Chips */}
+              <div className="grid grid-cols-2 gap-2">
                 <div
                   className={`rounded-2xl border p-2 text-center ${
                     isDark ? 'bg-slate-900/80 border-white/10' : 'bg-white border-slate-200 shadow-sm'
@@ -320,28 +319,6 @@ export default function VictoryModal({
                     }`}
                   >
                     {formatTime(stats.elapsedSeconds)}
-                  </div>
-                </div>
-
-                <div
-                  className={`rounded-2xl border p-2 text-center ${
-                    isDark ? 'bg-slate-900/80 border-white/10' : 'bg-white border-slate-200 shadow-sm'
-                  }`}
-                >
-                  <div
-                    className={`flex items-center justify-center gap-1 text-[10px] mb-0.5 ${
-                      isDark ? 'text-slate-400' : 'text-slate-500'
-                    }`}
-                  >
-                    <Lightbulb className="w-3 h-3 text-amber-500" />
-                    <span>ตัวช่วย</span>
-                  </div>
-                  <div
-                    className={`font-mono font-extrabold text-sm sm:text-base ${
-                      isDark ? 'text-amber-300' : 'text-amber-700'
-                    }`}
-                  >
-                    {stats.hintsUsed} ครั้ง
                   </div>
                 </div>
 
