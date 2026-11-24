@@ -113,7 +113,7 @@ export default function LeaderboardModal({
                     <HardDrive className="w-3 h-3" />
                   )}
                   <span>
-                    {isOnline ? (liveRealtime ? 'TV Live Realtime' : 'Supabase Online') : 'Local Mode'}
+                    {isOnline ? (liveRealtime ? 'TV Live' : 'Online') : 'Local Mode'}
                   </span>
                 </span>
               </div>
