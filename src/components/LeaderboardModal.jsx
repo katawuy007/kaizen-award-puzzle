@@ -23,6 +23,7 @@ export default function LeaderboardModal({
   theme,
   entries,
   source = 'local',
+  liveRealtime = false,
   loading = false,
   onRefresh,
   onClearLeaderboard,
@@ -106,8 +107,14 @@ export default function LeaderboardModal({
                       : 'bg-slate-100 border-slate-300 text-slate-600'
                   }`}
                 >
-                  {isOnline ? <Wifi className="w-3 h-3" /> : <HardDrive className="w-3 h-3" />}
-                  <span>{isOnline ? 'Supabase Live' : 'Local Mode'}</span>
+                  {isOnline ? (
+                    <Wifi className={`w-3 h-3 ${liveRealtime ? 'animate-pulse' : ''}`} />
+                  ) : (
+                    <HardDrive className="w-3 h-3" />
+                  )}
+                  <span>
+                    {isOnline ? (liveRealtime ? 'TV Live Realtime' : 'Supabase Online') : 'Local Mode'}
+                  </span>
                 </span>
               </div>
               <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>

@@ -56,8 +56,15 @@ function loadPlayerProfile() {
   return { employeeId: '', department: '', name: '' };
 }
 
+function detectTvMode() {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('tv') === '1' || params.get('mode') === 'tv';
+}
+
 export default function App() {
-  // Always open on the Login Screen first!
+  const isTvMode = detectTvMode();
+  // Always open on the Login Screen first (Booth TV ?tv=1 auto-opens Live Leaderboard!)
   const [screen, setScreen] = useState('login'); // 'login' | 'lobby' | 'puzzle'
   const [theme, setTheme] = useState(loadInitialTheme);
   const [progress, setProgress] = useState(() => loadProgress());
@@ -77,7 +84,7 @@ export default function App() {
   const [gameKey, setGameKey] = useState(1);
   const [victoryData, setVictoryData] = useState(null);
   const [collectionState, setCollectionState] = useState({ open: false, focusId: null });
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(isTvMode);
   const [showQr, setShowQr] = useState(false);
 
   // Sync theme class on <html>
@@ -115,10 +122,12 @@ export default function App() {
     refreshLeaderboard();
   }, [refreshLeaderboard]);
 
-  // Smart Realtime: connect ONLY when LeaderboardModal is open (supports 400+ concurrent players on Supabase Free!)
+  // TV-Only Realtime: WebSocket connects ONLY in Booth TV mode (?tv=1), while mobile players fetch fresh HTTP on open/refresh (0 WebSocket slots used -> handles 1,000+ concurrent players on Supabase Free!)
   useEffect(() => {
     if (!showLeaderboard) return undefined;
     refreshLeaderboard();
+    if (!isTvMode) return undefined;
+
     const unsubscribe = subscribeLeaderboard((newEntry) => {
       setLeaderboard((prev) => {
         if (prev.some((item) => item.id === newEntry.id)) return prev;
@@ -132,7 +141,7 @@ export default function App() {
       });
     });
     return unsubscribe;
-  }, [showLeaderboard, refreshLeaderboard]);
+  }, [showLeaderboard, isTvMode, refreshLeaderboard]);
 
   const handleToggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -395,6 +404,7 @@ export default function App() {
             theme={theme}
             entries={leaderboard}
             source={leaderboardSource}
+            liveRealtime={isTvMode}
             loading={leaderboardLoading}
             onRefresh={refreshLeaderboard}
             onClearLeaderboard={handleClearLeaderboard}

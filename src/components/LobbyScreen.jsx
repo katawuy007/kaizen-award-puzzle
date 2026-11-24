@@ -3,13 +3,9 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
   Dices,
-  Trophy,
   Volume2,
   VolumeX,
   Sparkles,
-  Lock,
-  Star,
-  Clock,
   CheckCircle2,
   Cog,
   Medal,
@@ -17,8 +13,9 @@ import {
   Music,
   LogOut,
   User,
+  Trophy,
 } from 'lucide-react';
-import { CATEGORIES, formatTime, pickSmartCategory } from '../data/categories.js';
+import { CATEGORIES, pickSmartCategory } from '../data/categories.js';
 import { sound } from '../utils/sound.js';
 import ThemeToggle from './ThemeToggle.jsx';
 
@@ -63,11 +60,6 @@ export default function LobbyScreen({
   const spinningRef = useRef(false);
   const hasSpunRef = useRef(false);
   const lastAutoTokenRef = useRef(0);
-
-  const completedCount = useMemo(
-    () => CATEGORIES.filter((c) => progress[c.id]?.completed).length,
-    [progress]
-  );
 
   const reelItems = useMemo(() => {
     const arr = [];
@@ -125,6 +117,10 @@ export default function LobbyScreen({
     const viewportW = viewportRef.current?.clientWidth || 800;
     const targetCategory = pickSmartCategory(progress, sessionHistory, lastDrawnId);
     const targetCatIdx = CATEGORIES.findIndex((c) => c.id === targetCategory.id);
+
+    // Preload ONLY the 1 winning category artwork during the 2.85s spin (~450 KB instead of ~3.2 MB for all 7!)
+    const preloadImg = new Image();
+    preloadImg.src = targetCategory.image;
 
     const cyclePx = CATEGORIES.length * stepSize;
     let startOffset = offsetRef.current;
@@ -327,25 +323,6 @@ export default function LobbyScreen({
             type="button"
             onClick={() => {
               sound.playButton();
-              onOpenCollection();
-            }}
-            className={`glass-panel transition-all px-2 sm:px-3 py-2 rounded-xl flex items-center gap-1 text-xs sm:text-sm font-bold whitespace-nowrap ${
-              isDark
-                ? 'hover:bg-white/15 text-amber-200 border-amber-400/35'
-                : 'hover:bg-white text-amber-700 border-amber-300/80'
-            }`}
-            title="คอลเลกชันรางวัล 7 หมวด"
-          >
-            <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
-            <span>
-              {completedCount}/{CATEGORIES.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              sound.playButton();
               onOpenQr();
             }}
             className={`glass-panel transition-all p-2 sm:p-2.5 rounded-xl shrink-0 hidden sm:flex items-center justify-center ${
@@ -394,7 +371,7 @@ export default function LobbyScreen({
       </header>
 
       {/* Main Hero + Game-Show Marquee Slot-Reel Randomizer */}
-      <main className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col items-center">
+      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center">
         {/* Title Banner */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -530,21 +507,13 @@ export default function LobbyScreen({
                             isDark ? 'bg-slate-900/95' : 'bg-white'
                           }`}
                         >
-                          {/* Blurred Mystery Artwork Backdrop */}
-                          <img
-                            src={cat.image}
-                            alt={cat.title}
-                            loading="lazy"
-                            className={`absolute inset-0 w-full h-full object-cover scale-110 blur-[5px] ${
-                              isDark ? 'opacity-38' : 'opacity-28'
-                            }`}
-                          />
+                          {/* Lightweight Neon Gradient Backdrop (Zero Image Download Until Winner Is Drawn) */}
                           <div
                             className="absolute inset-0"
                             style={{
                               background: isDark
-                                ? `linear-gradient(180deg, rgba(10,16,42,0.52) 0%, rgba(10,16,42,0.82) 60%, ${cat.accent}40 100%)`
-                                : `linear-gradient(180deg, rgba(255,255,255,0.68) 0%, rgba(255,255,255,0.82) 55%, ${cat.accent}38 100%)`,
+                                ? `radial-gradient(circle at 50% 35%, ${cat.accent}42 0%, rgba(10,16,42,0.88) 65%, ${cat.accent}2E 100%)`
+                                : `radial-gradient(circle at 50% 35%, ${cat.accent}24 0%, rgba(255,255,255,0.92) 65%, ${cat.accent}22 100%)`,
                             }}
                           />
 
@@ -663,175 +632,13 @@ export default function LobbyScreen({
         </div>
       </main>
 
-      {/* Bottom Collection Strip (7 Kaizen Award Badges) */}
-      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-4 pt-1">
-        <div className="glass-panel rounded-3xl p-3.5 sm:p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
-              <h2 className={`font-display font-bold text-sm sm:text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                คอลเลกชันรางวัล Kaizen Award
-              </h2>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold border whitespace-nowrap ${
-                  isDark
-                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
-                    : 'bg-amber-100 text-amber-800 border-amber-300'
-                }`}
-              >
-                สะสมแล้ว {completedCount} / {CATEGORIES.length} หมวด
-              </span>
-            </div>
-
-            {/* Slim Progress Bar */}
-            <div className="flex items-center gap-2.5 w-full sm:w-52">
-              <div
-                className={`flex-1 h-2.5 rounded-full overflow-hidden border ${
-                  isDark ? 'bg-slate-800/90 border-white/10' : 'bg-slate-200/90 border-slate-300/70'
-                }`}
-              >
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-emerald-400"
-                  initial={false}
-                  animate={{ width: `${(completedCount / CATEGORIES.length) * 100}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-              <span className={`text-xs font-bold w-9 text-right ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                {Math.round((completedCount / CATEGORIES.length) * 100)}%
-              </span>
-            </div>
-          </div>
-
-          {/* 7 Award Badges Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-            {CATEGORIES.map((cat) => {
-              const record = progress[cat.id];
-              const unlocked = Boolean(record?.completed);
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => {
-                    sound.playButton();
-                    onOpenCollection(cat.id);
-                  }}
-                  style={
-                    unlocked
-                      ? {
-                          borderColor: `${cat.accent}AA`,
-                          boxShadow: `0 8px 22px -8px ${cat.accent}88`,
-                        }
-                      : undefined
-                  }
-                  className={`group relative rounded-2xl p-2 text-left transition-all border overflow-hidden hover:-translate-y-1 ${
-                    unlocked
-                      ? isDark
-                        ? 'bg-slate-900/85'
-                        : 'bg-white shadow-md'
-                      : isDark
-                      ? 'bg-slate-900/55 border-white/10 hover:border-white/25 opacity-85 hover:opacity-100'
-                      : 'bg-white/75 border-slate-200/90 hover:border-sky-300 shadow-sm'
-                  }`}
-                >
-                  {/* Iridescent hover sheen on unlocked cards */}
-                  {unlocked && (
-                    <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 holo-sheen transition-opacity duration-300 z-20" />
-                  )}
-
-                  {/* Thumbnail or Locked Silhouette */}
-                  <div
-                    className={`relative aspect-square w-full rounded-xl overflow-hidden mb-1.5 border ${
-                      isDark ? 'bg-slate-950/80 border-white/10' : 'bg-slate-100 border-slate-200/80'
-                    }`}
-                  >
-                    {unlocked ? (
-                      <>
-                        <img
-                          src={cat.image}
-                          alt={cat.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <span
-                          className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold text-white shadow"
-                          style={{ backgroundColor: cat.accent }}
-                        >
-                          {cat.code}
-                        </span>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center relative">
-                        <img
-                          src={cat.image}
-                          alt=""
-                          className={`absolute inset-0 w-full h-full object-cover grayscale blur-[2px] ${
-                            isDark ? 'brightness-[0.2]' : 'opacity-20'
-                          }`}
-                        />
-                        <div className="relative z-10 flex flex-col items-center gap-1">
-                          <div
-                            className={`w-8 h-8 rounded-full border flex items-center justify-center ${
-                              isDark
-                                ? 'bg-slate-800/90 border-white/15 text-slate-300'
-                                : 'bg-white/90 border-slate-200 text-slate-500 shadow-sm'
-                            }`}
-                          >
-                            <Lock className="w-3.5 h-3.5" />
-                          </div>
-                          <span
-                            className={`text-[10px] font-bold tracking-wider ${
-                              isDark ? 'text-slate-300' : 'text-slate-600'
-                            }`}
-                          >
-                            {cat.code}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Badge Label & Stats */}
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-xs">{cat.icon}</span>
-                    <span className={`text-[11px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {cat.title}
-                    </span>
-                  </div>
-
-                  {unlocked ? (
-                    <div className="flex items-center justify-between text-[10px] mt-1">
-                      <span className="flex items-center gap-0.5 text-amber-400">
-                        {Array.from({ length: 3 }).map((_, idx) => (
-                          <Star
-                            key={idx}
-                            className={`w-2.5 h-2.5 ${
-                              idx < (record.bestStars || 1)
-                                ? 'fill-amber-400 text-amber-400'
-                                : isDark
-                                ? 'text-slate-600'
-                                : 'text-slate-300'
-                            }`}
-                          />
-                        ))}
-                      </span>
-                      <span
-                        className={`flex items-center gap-0.5 font-mono font-semibold ${
-                          isDark ? 'text-emerald-300' : 'text-emerald-700'
-                        }`}
-                      >
-                        <Clock className="w-2.5 h-2.5" />
-                        {formatTime(record.bestTime)}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>ยังไม่ปลดล็อก</p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {/* Clean Footer */}
+      <footer className="relative z-10 text-center pb-5 px-4">
+        <p className={`text-[11px] sm:text-xs flex items-center justify-center gap-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <Trophy className="w-3.5 h-3.5 text-amber-500" />
+          <span>ภารกิจสุ่ม 1 รอบ 4×4 (16 ชิ้น) • ต่อสำเร็จบันทึกคะแนนขึ้น Hall of Fame อัตโนมัติ</span>
+        </p>
+      </footer>
     </div>
   );
 }
